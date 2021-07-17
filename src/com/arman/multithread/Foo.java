@@ -5,26 +5,26 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Foo {
-    private boolean onePrinted = false;
-    private boolean twoPrinted = false;
+    private final Semaphore semaphore1 = new Semaphore(0);
+    private final Semaphore semaphore2 = new Semaphore(0);
 
-    public synchronized void first(Runnable first)  {
-      first.run();
-      onePrinted = true;
-      notifyAll();
+    public void first(Runnable first) throws InterruptedException  {
+        try {
+            first.run();
+        } finally {
+            semaphore1.release();
+        }
     }
     public synchronized void second(Runnable second) throws InterruptedException {
-        while (!onePrinted) {
-            wait();
+        try {
+            semaphore1.acquire();
+            second.run();
+        } finally {
+            semaphore2.release();
         }
-        second.run();
-        twoPrinted = true;
-        notifyAll();
     }
     public synchronized void third(Runnable third)  throws InterruptedException {
-        while (!twoPrinted) {
-            wait();
-        }
+        semaphore2.acquire();
         third.run();
     }
 }
